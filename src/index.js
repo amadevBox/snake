@@ -11,17 +11,14 @@ class Snake {
     this.angle = angle
     this.length = length
     this.ctx = ctx
-    this.coordinates = {
-      x : [],
-      y : []
-  	}
+    this.coordinates = []
   }
 
   draw() {
     this.ctx.beginPath()
     this.ctx.globalCompositeOperation = 'source-over'
     this.ctx.fillStyle = this.color
-    this.ctx.arc(this.x, this.y, Snake.PIECE_SNAKE_RADIUS, 0, 2 * Math.PI)
+    this.ctx.arc(this.x, this.y, Snake.HEAD_RADIUS, 0, 2 * Math.PI)
     this.ctx.fill()
     this.ctx.closePath()
   }
@@ -37,37 +34,38 @@ class Snake {
     that.validationCoordinates(cSetting)
     that.pushCoordinates()
     that.draw()
+    that.findSnakeСollision()
   }
 
   pushCoordinates() {
-    this.coordinates.x.push(this.x)
-    this.coordinates.y.push(this.y)
+    this.coordinates.push({
+      x: this.x,
+      y: this.y,
+    })
     this.snakeLengthControl()
   }
 
   snakeLengthControl() {
-    if (this.coordinates.x.length > this.length) {
+    if (this.coordinates.length > this.length) {
+      const { x, y } = this.coordinates[0]
       this.ctx.beginPath()
-      this.ctx.clearRect(
-        this.coordinates.x[0] - Snake.PIECE_SNAKE_RADIUS - 3,
-        this.coordinates.y[0] - Snake.PIECE_SNAKE_RADIUS - 3,
-        Snake.PIECE_SNAKE_RADIUS * 2 + 4, Snake.PIECE_SNAKE_RADIUS * 2 + 4
-      )
-      this.ctx.closePath()
-      this.coordinates.x.shift()
-      this.coordinates.y.shift()
+      this.ctx.fillStyle = '#000'
+      this.ctx.arc(x, y, Snake.HEAD_RADIUS + 2, 0, 2 * Math.PI)
+      this.ctx.fill();
+      this.ctx.closePath();
+
+      this.coordinates.shift()
     }
   }
 
   validationCoordinates({mapW, mapH}) {
-    if (this.x < 0) {
-      this.x = mapW
-    } else if (this.x > mapW) {
-      this.x = 0
-    } else if (this.y < 0) {
-      this.y = mapH
-    } else if (this.y > mapH) {
-      this.y = 0
+    if (
+      (this.x < 0) ||
+      (this.x > mapW) ||
+      (this.y < 0) ||
+      (this.y > mapH)
+    ) {
+      // this.stop()
     }
   }
 
@@ -93,6 +91,15 @@ class Snake {
     this.draw()
   }
 
+  findSnakeСollision() {
+    this.coordinates.slice(0, -10).forEach(({x, y}) => {
+      const distance = Math.sqrt(((x - this.x) ** 2) + ((y - this.y) ** 2))
+      if (distance < 10) {
+        this.stop()
+      }
+    })
+  }
+
   stop() {
     clearInterval(this.interval)
     alert('Finish')
@@ -100,16 +107,45 @@ class Snake {
 }
 
 Snake.INITIAL_LENGTH = 150
-Snake.PIECE_SNAKE_RADIUS = 5.3
+Snake.HEAD_RADIUS = 5.3
 Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
+
+
+
+class Food {
+	constructor(maxX, maxY, ctxSnake, x, y, color) {
+		this.x = (x % (maxX - 2 * 5) + 5)
+		this.y = (y % (maxY - 2 * 5) + 5)
+		this.color = color
+		this.draw(ctxSnake)
+	}
+
+	draw(ctx) {
+		ctx.beginPath()
+    ctx.fillStyle = this.color
+    ctx.arc(this.x, this.y, Food.RADIUS, 0, 2 * Math.PI)
+    ctx.fill();
+    ctx.closePath();
+	}
+
+	destroy(ctx) {
+		ctx.beginPath()
+    ctx.fillStyle = '#fff'
+    ctx.arc(this.x - 1, this.y - 1, Food.RADIUS + 2, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.closePath()
+	}
+}
+
+Food.RADIUS = 6
 
 
 window.onload = () => {
   const canvas = document.getElementById('map')
   const ctx = canvas.getContext('2d')
 
-  const snake = new Snake(100, 100, 0, 100, ctx)
+  const snake = new Snake(100, 100, 0, 200, ctx)
   snake.start({mapW: 500, mapH: 500})
 
   addEventListener(
