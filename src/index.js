@@ -1,10 +1,10 @@
-const convertDegInRad = (angle) => {
+const degToRad = (angle) => {
   return (angle * Math.PI) / 180
 }
 
 class Snake {
-  constructor(color = '#ff5050', x, y, angle, length, ctx) {
-    this.color = color
+  constructor(x, y, angle, length, ctx) {
+    this.color = '#ff5050'
     this.name = name
     this.x = x
     this.y = y
@@ -31,9 +31,9 @@ class Snake {
   }
 
   running(cSetting, that) {
-    const radian = convertDegInRad(that.angle)
-    that.x += that.SPEED * Math.cos(radian)
-    that.y += that.SPEED * Math.sin(radian)
+    const radian = degToRad(that.angle)
+    that.x += Snake.SPEED * Math.cos(radian)
+    that.y += Snake.SPEED * Math.sin(radian)
     that.validationCoordinates(cSetting)
     that.pushCoordinates()
     that.draw()
@@ -59,15 +59,15 @@ class Snake {
     }
   }
 
-  validationCoordinates(cSetting) {
-    if (this.x < cSetting.THICNESS_WALL) {
-     this.x = cSetting.mapW - cSetting.THICNESS_WALL
-    } else if (this.x > cSetting.mapW - cSetting.THICNESS_WALL) {
-     this.x = cSetting.THICNESS_WALL
-    } else if (this.y < cSetting.THICNESS_WALL) {
-     this.y = cSetting.mapH - cSetting.THICNESS_WALL
-    } else if (this.y > cSetting.mapH - cSetting.THICNESS_WALL) {
-     this.y = cSetting.THICNESS_WALL
+  validationCoordinates({mapW, mapH}) {
+    if (this.x < 0) {
+      this.x = mapW
+    } else if (this.x > mapW) {
+      this.x = 0
+    } else if (this.y < 0) {
+      this.y = mapH
+    } else if (this.y > mapH) {
+      this.y = 0
     }
   }
 
@@ -87,8 +87,8 @@ class Snake {
     } else {
       this.SPEED = 2
     }
-    this.x += (this.SPEED * Math.cos(convertDegInRad(this.angle))) >> 0
-    this.y += this.SPEED * Math.sin(convertDegInRad(this.angle))
+    this.x += this.SPEED * Math.cos(degToRad(this.angle))
+    this.y += this.SPEED * Math.sin(degToRad(this.angle))
     this.pushCoordinates()
     this.draw()
   }
@@ -99,7 +99,31 @@ class Snake {
   }
 }
 
-Snake.INITIAL_LENGTH  = 150
+Snake.INITIAL_LENGTH = 150
 Snake.PIECE_SNAKE_RADIUS = 5.3
 Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
+
+
+window.onload = () => {
+  const canvas = document.getElementById('map')
+  const ctx = canvas.getContext('2d')
+
+  const snake = new Snake(100, 100, 0, 100, ctx)
+  snake.start({mapW: 500, mapH: 500})
+
+  addEventListener(
+    'keydown', (e) => {
+      switch(e.keyCode) {
+        case 37: {
+          snake.turnLeft()
+          break
+        }
+        case 39: {
+          snake.turnRight()
+          break
+        }
+      }
+    }
+  )
+}
