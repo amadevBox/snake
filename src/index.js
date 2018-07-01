@@ -49,10 +49,10 @@ class Snake {
     if (this.coordinates.length > this.length) {
       const { x, y } = this.coordinates[0]
       this.ctx.beginPath()
-      this.ctx.fillStyle = '#000'
+      this.ctx.fillStyle = '#fff'
       this.ctx.arc(x, y, Snake.HEAD_RADIUS + 2, 0, 2 * Math.PI)
-      this.ctx.fill();
-      this.ctx.closePath();
+      this.ctx.fill()
+      this.ctx.closePath()
 
       this.coordinates.shift()
     }
@@ -92,9 +92,9 @@ class Snake {
   }
 
   findSnakeСollision() {
-    this.coordinates.slice(0, -10).forEach(({x, y}) => {
+    this.coordinates.slice(0, -Snake.HEAD_RADIUS).forEach(({x, y}) => {
       const distance = Math.sqrt(((x - this.x) ** 2) + ((y - this.y) ** 2))
-      if (distance < 10) {
+      if (distance < Snake.HEAD_RADIUS + 2) {
         this.stop()
       }
     })
@@ -107,18 +107,18 @@ class Snake {
 }
 
 Snake.INITIAL_LENGTH = 150
-Snake.HEAD_RADIUS = 5.3
+Snake.HEAD_RADIUS = 5
 Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
 
 
 
 class Food {
-	constructor(maxX, maxY, ctxSnake, x, y, color) {
+	constructor(maxX, maxY, ctx, x, y, color) {
 		this.x = (x % (maxX - 2 * 5) + 5)
 		this.y = (y % (maxY - 2 * 5) + 5)
 		this.color = color
-		this.draw(ctxSnake)
+		this.draw(ctx)
 	}
 
 	draw(ctx) {
@@ -140,6 +140,18 @@ class Food {
 
 Food.RADIUS = 6
 
+const maxAmountOfFood = 30
+const foodGeneration = (foods = [], ctx) => {
+  let diff = maxAmountOfFood - foods.length
+  while (diff > 0) {
+    const x = (Math.random() * 500) >> 0
+    const y = (Math.random() * 500) >> 0
+    const color = '#'+((1 << 24) * Math.random()|0).toString(16)
+    const food = new Food(500, 500, ctx, x, y, color)
+    foods.push(food)
+    diff--
+  }
+}
 
 window.onload = () => {
   const canvas = document.getElementById('map')
@@ -147,6 +159,9 @@ window.onload = () => {
 
   const snake = new Snake(100, 100, 0, 200, ctx)
   snake.start({mapW: 500, mapH: 500})
+
+  const foods = []
+  foodGeneration(foods, ctx)
 
   addEventListener(
     'keydown', (e) => {
