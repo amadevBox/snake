@@ -111,8 +111,6 @@ Snake.HEAD_RADIUS = 5
 Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
 
-
-
 class Food {
 	constructor(maxX, maxY, ctx, x, y, color) {
 		this.x = (x % (maxX - 2 * 5) + 5)
@@ -132,15 +130,17 @@ class Food {
 	destroy(ctx) {
 		ctx.beginPath()
     ctx.fillStyle = '#fff'
-    ctx.arc(this.x - 1, this.y - 1, Food.RADIUS + 2, 0, 2 * Math.PI)
+    ctx.strokeStyle = '#fff'
+    ctx.arc(this.x, this.y, Food.RADIUS, 0, 2 * Math.PI)
     ctx.fill()
+    ctx.stroke()
     ctx.closePath()
 	}
 }
 
 Food.RADIUS = 6
 
-const maxAmountOfFood = 30
+const maxAmountOfFood = 100
 const foodGeneration = (foods = [], ctx) => {
   let diff = maxAmountOfFood - foods.length
   while (diff > 0) {
@@ -153,15 +153,39 @@ const foodGeneration = (foods = [], ctx) => {
   }
 }
 
+const findFoodCollision = (foods, ctx, snake) => {
+  for (const food of foods) {
+    if (
+      (snake.x > food.x - 10) &&
+      (snake.x < food.x + 10) &&
+    	(snake.y > food.y - 10) &&
+      (snake.y < food.y + 10)
+    ) {
+      food.destroy(ctx)
+    	foods.splice(foods.indexOf(food), 1)
+
+    	snake.length += 1
+      changeScore(snake.length - Snake.INITIAL_LENGTH)
+    }
+  }
+}
+
+const changeScore = (score) => {
+  const scoreElem = document.getElementById('score')
+  scoreElem.innerHTML = `length: ${score}`
+}
+
 window.onload = () => {
   const canvas = document.getElementById('map')
   const ctx = canvas.getContext('2d')
 
-  const snake = new Snake(100, 100, 0, 200, ctx)
+  const snake = new Snake(100, 100, 0, Snake.INITIAL_LENGTH, ctx)
   snake.start({mapW: 500, mapH: 500})
 
   const foods = []
   foodGeneration(foods, ctx)
+
+  setInterval(findFoodCollision, 15, foods, ctx, snake)
 
   addEventListener(
     'keydown', (e) => {
