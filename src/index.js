@@ -1,37 +1,31 @@
-const degToRad = (angle) => {
-  return (angle * Math.PI) / 180
-}
+const degToRad = (angle) => ((angle * Math.PI) / 180)
 
 class Snake {
-  constructor(x, y, angle, length, ctx) {
+  constructor(x, y, angle, length, game) {
     this.color = '#ff5050'
     this.name = name
     this.x = x
     this.y = y
     this.angle = angle
     this.length = length
-    this.ctx = ctx
+    this.ctx = game.ctx
+    this.game = game
     this.coordinates = []
   }
 
   draw() {
     this.ctx.beginPath()
-    this.ctx.globalCompositeOperation = 'source-over'
     this.ctx.fillStyle = this.color
     this.ctx.arc(this.x, this.y, Snake.HEAD_RADIUS, 0, 2 * Math.PI)
     this.ctx.fill()
     this.ctx.closePath()
   }
 
-  start(canvasSetting) {
-    this.interval = setInterval(this.running, 30, canvasSetting, this)
-  }
-
-  running(cSetting, that) {
+  running(canvasSize, that) {
     const radian = degToRad(that.angle)
     that.x += Snake.SPEED * Math.cos(radian)
     that.y += Snake.SPEED * Math.sin(radian)
-    that.validationCoordinates(cSetting)
+    that.validationCoordinates(canvasSize)
     that.pushCoordinates()
     that.draw()
     that.findSnakeСollision()
@@ -43,6 +37,20 @@ class Snake {
       y: this.y,
     })
     this.snakeLengthControl()
+  }
+
+  directionControl(e) {
+    if (this.game.finished) return
+    switch(e.keyCode) {
+      case 37: {
+        this.turnLeft()
+        break
+      }
+      case 39: {
+        this.turnRight()
+        break
+      }
+    }
   }
 
   snakeLengthControl() {
@@ -60,12 +68,10 @@ class Snake {
 
   validationCoordinates({mapW, mapH}) {
     if (
-      (this.x < 0) ||
-      (this.x > mapW) ||
-      (this.y < 0) ||
-      (this.y > mapH)
+      (this.x < 0) || (this.x > mapW) ||
+      (this.y < 0) || (this.y > mapH)
     ) {
-      // this.stop()
+      finishGame(this.game)
     }
   }
 
@@ -80,13 +86,9 @@ class Snake {
   }
 
   move(rotate = false) {
-    if (rotate) {
-      this.SPEED = 1.6
-    } else {
-      this.SPEED = 2
-    }
-    this.x += this.SPEED * Math.cos(degToRad(this.angle))
-    this.y += this.SPEED * Math.sin(degToRad(this.angle))
+    const koef = rotate ? 0.8 : 1
+    this.x += koef * Snake.SPEED * Math.cos(degToRad(this.angle))
+    this.y += koef * Snake.SPEED * Math.sin(degToRad(this.angle))
     this.pushCoordinates()
     this.draw()
   }
@@ -95,26 +97,20 @@ class Snake {
     this.coordinates.slice(0, -Snake.HEAD_RADIUS).forEach(({x, y}) => {
       const distance = Math.sqrt(((x - this.x) ** 2) + ((y - this.y) ** 2))
       if (distance < Snake.HEAD_RADIUS + 2) {
-        this.stop()
+        finishGame(this.game)
       }
     })
   }
-
-  stop() {
-    clearInterval(this.interval)
-    alert('Finish')
-  }
 }
-
 Snake.INITIAL_LENGTH = 150
 Snake.HEAD_RADIUS = 5
 Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
 
 class Food {
-	constructor(maxX, maxY, ctx, x, y, color) {
-		this.x = (x % (maxX - 2 * 5) + 5)
-		this.y = (y % (maxY - 2 * 5) + 5)
+	constructor(x, y, color, ctx) {
+		this.x = x
+		this.y = y
 		this.color = color
 		this.draw(ctx)
 	}
@@ -123,8 +119,8 @@ class Food {
 		ctx.beginPath()
     ctx.fillStyle = this.color
     ctx.arc(this.x, this.y, Food.RADIUS, 0, 2 * Math.PI)
-    ctx.fill();
-    ctx.closePath();
+    ctx.fill()
+    ctx.closePath()
 	}
 
 	destroy(ctx) {
@@ -137,7 +133,6 @@ class Food {
     ctx.closePath()
 	}
 }
-
 Food.RADIUS = 6
 
 const maxAmountOfFood = 100
@@ -147,7 +142,7 @@ const foodGeneration = (foods = [], ctx) => {
     const x = (Math.random() * 500) >> 0
     const y = (Math.random() * 500) >> 0
     const color = '#'+((1 << 24) * Math.random()|0).toString(16)
-    const food = new Food(500, 500, ctx, x, y, color)
+    const food = new Food(x, y, color, ctx)
     foods.push(food)
     diff--
   }
@@ -156,14 +151,11 @@ const foodGeneration = (foods = [], ctx) => {
 const findFoodCollision = (foods, ctx, snake) => {
   for (const food of foods) {
     if (
-      (snake.x > food.x - 10) &&
-      (snake.x < food.x + 10) &&
-    	(snake.y > food.y - 10) &&
-      (snake.y < food.y + 10)
+      (snake.x > food.x - 10) && (snake.x < food.x + 10) &&
+    	(snake.y > food.y - 10) && (snake.y < food.y + 10)
     ) {
       food.destroy(ctx)
     	foods.splice(foods.indexOf(food), 1)
-
     	snake.length += 1
       changeScore(snake.length - Snake.INITIAL_LENGTH)
     }
@@ -175,30 +167,33 @@ const changeScore = (score) => {
   scoreElem.innerHTML = `length: ${score}`
 }
 
+const startGame = (game) => {
+  const { snake, foods, ctx } = game
+  foodGeneration(foods, ctx)
+
+  const canvasSize = {mapW: 500, mapH: 500}
+  game.snakeInterval = setInterval(snake.running, 30, canvasSize, snake)
+  game.foodInterval = setInterval(findFoodCollision, 15, foods, ctx, snake)
+
+  addEventListener('keydown', snake.directionControl.bind(snake))
+}
+
+const finishGame = (game) => {
+  if(game.finished) return
+  const { snake, snakeInterval, foodInterval } = game
+  clearInterval(snakeInterval)
+  clearInterval(foodInterval)
+  game.finished = true
+  alert('You lose :(')
+}
+
 window.onload = () => {
   const canvas = document.getElementById('map')
   const ctx = canvas.getContext('2d')
+  const game = { ctx }
 
-  const snake = new Snake(100, 100, 0, Snake.INITIAL_LENGTH, ctx)
-  snake.start({mapW: 500, mapH: 500})
+  game.snake = new Snake(100, 100, 0, Snake.INITIAL_LENGTH, game)
+  game.foods = []
 
-  const foods = []
-  foodGeneration(foods, ctx)
-
-  setInterval(findFoodCollision, 15, foods, ctx, snake)
-
-  addEventListener(
-    'keydown', (e) => {
-      switch(e.keyCode) {
-        case 37: {
-          snake.turnLeft()
-          break
-        }
-        case 39: {
-          snake.turnRight()
-          break
-        }
-      }
-    }
-  )
+  startGame(game)
 }
