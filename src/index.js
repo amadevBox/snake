@@ -108,30 +108,30 @@ Snake.SPEED = 2
 Snake.ROTATION_SPEED = 5
 
 class Food {
-	constructor(x, y, color, ctx) {
-		this.x = x
-		this.y = y
-		this.color = color
-		this.draw(ctx)
-	}
+  constructor(x, y, color, ctx) {
+    this.x = x
+    this.y = y
+    this.color = color
+    this.draw(ctx)
+  }
 
-	draw(ctx) {
-		ctx.beginPath()
+  draw(ctx) {
+    ctx.beginPath()
     ctx.fillStyle = this.color
     ctx.arc(this.x, this.y, Food.RADIUS, 0, 2 * Math.PI)
     ctx.fill()
     ctx.closePath()
-	}
+  }
 
-	destroy(ctx) {
-		ctx.beginPath()
+  destroy(ctx) {
+    ctx.beginPath()
     ctx.fillStyle = '#fff'
     ctx.strokeStyle = '#fff'
     ctx.arc(this.x, this.y, Food.RADIUS, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
     ctx.closePath()
-	}
+  }
 }
 Food.RADIUS = 6
 
